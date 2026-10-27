@@ -36,7 +36,7 @@ const TILT_SMOOTHING  = 0.3; // 0..1. Lower = smoother but slower; 1 = no smooth
 const MIN_DWELL_MS    = 200; // minimum time between two state changes
 const TILT_OFFSET     = 0;   // degrees. If "neutral" reads e.g. +8 in the debug box, set 8
 const SWAP_TILT_DIRECTION = false; // set true if left/right feel reversed
-const SHOW_DEBUG      = true; // set false to hide the debug box
+const SHOW_DEBUG      = false; // set false to hide the debug box
 
 /* ---------- 3. STATE ---------- */
 let role = 1;
