@@ -50,71 +50,90 @@ Players can experiment with different arrangements without needing to agree on a
 
 ## Steps
 
-Each step is checked on two phones (and on two browser windows on the laptop as
-the fallback) before the next one starts.
+Each step is checked on two phones first (two browser windows on the laptop as
+the fallback), then on four phones for the playtest.
 
-Step 1: Panel shell and room join
+Step 1: Panel shell and room join (done)
 
 - Input: A player taps the join prompt.
 - Transformation: The phone joins the shared room `a1-ridge` through the class
   Share host. A full-screen placeholder panel appears.
 - Output: One black-line placeholder drawing, edge to edge, with a small join
-  status and a pairing hint.
+  status and a pairing control.
 - Fallback: Two browser windows on the laptop join the same room.
-- Check: The phone joins by tapping (or by scanning the desktop QR), the status
-  says connected, and both windows on the laptop show the panel.
+- Check: The phone joins by tapping (or by scanning the desktop QR); both
+  windows show the panel and count each other.
 
-Step 2: Manual pairing, left and right
+Step 2: Manual pairing, left and right (done)
 
 - Input: A "Pair" tap on each of two phones.
 - Transformation: The first phone to pair becomes A (left), the second becomes
-  B (right). Each phone is told who it is paired with.
+  B (right). Each phone is told who it is paired with. The pair clears when
+  either phone unpairs or leaves.
 - Output: Each panel shows its role and partner briefly, then clears to the
   full-screen panel.
-- Fallback: The Pair button works with a mouse click in a browser window.
-- Check: Pair a phone and a browser window. One shows A, the other B; unpairing
-  clears both.
+- Fallback: The Pair control works with a mouse click in a browser window.
+- Check: Pair a phone and a browser window; one shows A, the other B;
+  unpairing or closing one clears both.
 
-Step 3: Tap to pass the element across
+Step 3: Two independent panels, tap to pass the element
 
 - Input: A tap on A, or on B.
-- Transformation: The tapped phone sends a timed event. The element leaves A's
-  right edge and enters B's left edge on the same schedule, so the crossing is
-  one movement.
-- Output: A placeholder element (a small figure or a ball) travels across the
-  seam. A tap on B sends it back.
+- Transformation: Each phone runs its own looping placeholder animation: A
+  walks, B reacts. The loops run independently and a crossing never restarts
+  them. A tap makes a visitor element leave A's right edge and enter B's left
+  edge on the same schedule; it crosses B's panel and disappears. A tap on B
+  sends it back.
+- Output: Two different panels looping side by side, with one temporary
+  element crossing over the receiving panel and leaving it unchanged
+  underneath.
 - Fallback: A mouse click in either browser window does the same.
-- Check: With the two phones side by side, tapping one sends the element onto
-  the other screen; tapping the second sends it back.
+- Check: With the two phones side by side, the element reads as one movement
+  from screen to screen while both loops keep running.
 
 Step 4: Make the crossing read as continuous
 
 - Input: The same taps.
 - Transformation: Exit and entry share the same speed, size and vertical
-  position, and meet exactly at the screen edge.
-- Output: The seam becomes hard to see. Role labels and status fade out while
-  the element crosses.
+  position, and meet exactly at the screen edge. Role labels and status fade
+  during a crossing. Loop phase is unaffected.
+- Output: The seam becomes hard to see.
 - Fallback: Same behaviour on the laptop.
-- Check: Hold two phones edge to edge; the element should look like one drawing
-  moving across both screens.
+- Check: Hold two phones edge to edge; the element should look like one
+  drawing moving across both screens.
+- Note: Trimmable if time is short; Step 3 already gives a rough crossing.
 
-Step 5: Four phones in sequence (after the two-phone crossing works)
+Step 5: Four independent panels
 
-- Input: Taps along a paired chain of four phones.
-- Transformation: Each phone is one panel in the sequence. The element passes
-  from neighbour to neighbour in the order the phones were paired.
-- Output: A four-panel sequence where the movement follows the pairing order.
-- Fallback: Four browser windows on the laptop.
-- Check: Four phones in a row; the element travels A, B, C, D and back.
+- Input: Four phones join the same room; any two pair, then taps pass the
+  element either way.
+- Transformation: Add the remaining two loops (falling, running). Each phone
+  is assigned a distinct panel by join order (walking, reacting, falling,
+  running) and remembers it across reloads. Unpaired phones keep looping.
+- Output: Four different looping panels, any pair crossed on tap, each panel
+  staying with its phone when the phones are rearranged.
+- Fallback: Four browser windows on the laptop, opened in a known order.
+- Check: Four phones show four different loops; any pair crosses in either
+  direction; moving phones keeps each panel with its own phone.
 
-Step 6: Automatic proximity and arrangement (to be explored, not built yet)
+Step 6: Playtest 1 and fixes
+
+- Input: Four players pairing phones, crossing the element, and rearranging
+  the panels.
+- Transformation: Fix only what breaks during the playtest. No new features.
+- Output: A working two-phone pairing and crossing prototype, and four
+  independent panels rearranged into sequences by hand.
+- Fallback: Laptop windows stand in for missing phones.
+- Check: Whether pairing works, whether the crossing looks continuous, and
+  whether rearranging changes how players read the story.
+
+Later (not built now): automatic proximity and arrangement
 
 - Input: Physical movement or rearrangement of phones.
 - Transformation: Phones detect each other and their relative position
   (left, right, top or bottom) and respond without a tap.
 - Output: The animation changes as phones are moved or reordered.
-- Fallback: Keyboard or mouse controls simulate the movement.
-- Check: To be defined once Step 5 works.
+- Check: To be defined after Playtest 1.
 
 ## Changes
 
