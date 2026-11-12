@@ -50,90 +50,51 @@ Players can experiment with different arrangements without needing to agree on a
 
 ## Steps
 
-Each step is checked on two phones first (two browser windows on the laptop as
-the fallback), then on four phones for the playtest.
+Playtest 1 is four phones with four independent looping panels. Manual
+pairing and the visitor crossing are parked under "Later".
 
 Step 1: Panel shell and room join (done)
 
 - Input: A player taps the join prompt.
-- Transformation: The phone joins the shared room `a1-ridge` through the class
-  Share host. A full-screen placeholder panel appears.
-- Output: One black-line placeholder drawing, edge to edge, with a small join
-  status and a pairing control.
-- Fallback: Two browser windows on the laptop join the same room.
-- Check: The phone joins by tapping (or by scanning the desktop QR); both
-  windows show the panel and count each other.
+- Transformation: The phone joins the shared room `a1-ridge` through the
+  class Share host and claims a free panel number (1–4) in the room, so
+  phones in the same room show different panels.
+- Output: A full-screen black-line panel. A small status line shows the
+  connection; the panel's name (for example "3 · falling") fades in briefly.
+- Fallback: Browser windows on the laptop join the same room and claim
+  panels too.
+- Check: Two phones join by QR and show two different panels; the status
+  line says connected and counts the phones.
 
-Step 2: Manual pairing, left and right (done)
+Step 2: Four independent looping panels
 
-- Input: A "Pair" tap on each of two phones.
-- Transformation: The first phone to pair becomes A (left), the second becomes
-  B (right). Each phone is told who it is paired with. The pair clears when
-  either phone unpairs or leaves.
-- Output: Each panel shows its role and partner briefly, then clears to the
-  full-screen panel.
-- Fallback: The Pair control works with a mouse click in a browser window.
-- Check: Pair a phone and a browser window; one shows A, the other B;
-  unpairing or closing one clears both.
+- Input: Nothing beyond opening the page.
+- Transformation: Four hand-drawn loops, each on its own clock: walking,
+  reacting, falling, running. The phone draws whichever panel it claimed.
+- Output: One animation per phone, edge to edge, looping continuously. No
+  tap, no pairing, no visitor.
+- Fallback: Same on the laptop.
+- Check: Four phones show four different loops; each loops cleanly; no two
+  phones show the same panel while the room has four or fewer phones.
 
-Step 3: Two independent panels, tap to pass the element
+Step 3: Playtest 1 and fixes
 
-- Input: A tap on A, or on B.
-- Transformation: Each phone runs its own looping placeholder animation: A
-  walks, B reacts. The loops run independently and a crossing never restarts
-  them. A tap makes a visitor element leave A's right edge and enter B's left
-  edge on the same schedule; it crosses B's panel and disappears. A tap on B
-  sends it back.
-- Output: Two different panels looping side by side, with one temporary
-  element crossing over the receiving panel and leaving it unchanged
-  underneath.
-- Fallback: A mouse click in either browser window does the same.
-- Check: With the two phones side by side, the element reads as one movement
-  from screen to screen while both loops keep running.
-
-Step 4: Make the crossing read as continuous
-
-- Input: The same taps.
-- Transformation: Exit and entry share the same speed, size and vertical
-  position, and meet exactly at the screen edge. Role labels and status fade
-  during a crossing. Loop phase is unaffected.
-- Output: The seam becomes hard to see.
-- Fallback: Same behaviour on the laptop.
-- Check: Hold two phones edge to edge; the element should look like one
-  drawing moving across both screens.
-- Note: Trimmable if time is short; Step 3 already gives a rough crossing.
-
-Step 5: Four independent panels
-
-- Input: Four phones join the same room; any two pair, then taps pass the
-  element either way.
-- Transformation: Add the remaining two loops (falling, running). Each phone
-  is assigned a distinct panel by join order (walking, reacting, falling,
-  running) and remembers it across reloads. Unpaired phones keep looping.
-- Output: Four different looping panels, any pair crossed on tap, each panel
-  staying with its phone when the phones are rearranged.
-- Fallback: Four browser windows on the laptop, opened in a known order.
-- Check: Four phones show four different loops; any pair crosses in either
-  direction; moving phones keeps each panel with its own phone.
-
-Step 6: Playtest 1 and fixes
-
-- Input: Four players pairing phones, crossing the element, and rearranging
-  the panels.
-- Transformation: Fix only what breaks during the playtest. No new features.
-- Output: A working two-phone pairing and crossing prototype, and four
-  independent panels rearranged into sequences by hand.
+- Input: Four players arranging the phones in different orders.
+- Transformation: None in code; players move the phones and read the order.
+- Output: A four-panel comic sequence whose meaning changes as the phones
+  are rearranged.
 - Fallback: Laptop windows stand in for missing phones.
-- Check: Whether pairing works, whether the crossing looks continuous, and
-  whether rearranging changes how players read the story.
+- Check: Whether players read different stories from different arrangements,
+  and whether the four panels feel like one comic.
 
-Later (not built now): automatic proximity and arrangement
+Later (parked, not built now)
 
-- Input: Physical movement or rearrangement of phones.
-- Transformation: Phones detect each other and their relative position
-  (left, right, top or bottom) and respond without a tap.
-- Output: The animation changes as phones are moved or reordered.
-- Check: To be defined after Playtest 1.
+- Manual pairing A/B — built, works, code is parked.
+- Tap-to-pass visitor: the walking panel sends its figure across the seam to
+  the partner's panel, temporarily over that panel's loop. Future
+  refinement: the visitor continues from the walker's current position
+  instead of a fixed point.
+- Automatic proximity and relative position (left, right, top or bottom).
 
 ## Changes
 
