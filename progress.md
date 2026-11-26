@@ -17,9 +17,12 @@ Last updated: Thu Nov 26 2026
 - `together/` — the user's Share example, unchanged. Source of the class host
   `https://p5-phone-share.npuckett.workers.dev` and room `a1-ridge`.
 - `style.css` is unused.
-- Working tree is clean, committed up to `63d7fbe 11/12 work wrapup`.
-  `references/mockup.png` is back in place (it had been deleted in the
-  working tree; `plan.md`'s References table lists it).
+- No framed animations are in the repo yet: there is no `assets/` folder.
+  The Playtest 2 art has to be exported and added before the first step can
+  be built.
+- Working tree is clean, committed up to `93dfdcd play test 1 progress
+  added`. `references/mockup.png` is back in place (it had been deleted in
+  the working tree; `plan.md`'s References table lists it).
 
 ## What works, and how it was checked
 
@@ -67,14 +70,19 @@ Last updated: Thu Nov 26 2026
   cross-phone movement. Players rearrange the phones by hand.
 - **The room and QR stay**, because they hand each phone a different panel
   automatically.
-- **Panels stay code-drawn, not image/GIF/video.** A GIF would not have
-  worked anyway: p5 does not animate GIFs, it decodes only the first frame.
-  Using images would mean either converting to short muted MP4s (plus iOS
-  autoplay handling, aspect-ratio cover-cropping, network load over the
-  tunnel) or building an animated sprite sheet from exported frames. With
-  40 minutes before the playtest it was not worth the risk, and four
-  mismatched drawings would have tested "what do these pictures show"
-  instead of "does the order change the story".
+- **Playtest 1 panels stayed code-drawn.** Four hand-drawn loops were
+  already written, and with 40 minutes before the playtest four mismatched
+  drawings would have tested "what do these pictures show" instead of "does
+  the order change the story".
+- **Correction: p5 2.2.3 does animate GIFs.** An earlier version of this note
+  said p5 decodes only the first frame. That is wrong for the build in
+  `index.html`: `loadImage()` decodes every GIF frame and exposes
+  `numFrames()`, `setFrame()`, `pause()`, `play()` and `reset()`, so a GIF
+  can be held on a still frame and triggered on demand. Animated WebP and
+  APNG still draw one frame only, and video is the wrong tool (no reliable
+  freeze or seek on iOS). A GIF decodes all its frames into memory at once
+  (width × height × 4 × frames), so keep the frames small. Playtest 2 uses
+  framed animations; see What's next.
 
 ## What's next
 
@@ -84,21 +92,28 @@ Last updated: Thu Nov 26 2026
    phones produces no visible change, so rearranging has no payoff. The
    silence about story may also be the absence of a prompt — nobody asked a
    player to read the sequence out loud.
-2. **Decide the next move before writing code:** one two-panel interaction
-   (walker crosses the seam — the parked pairing in `31572c2` / `c0e64b3`)
-   and dropping the number from the label, versus a simpler tap-to-advance
-   beat. Either way, the second playtest needs one spoken instruction
-   ("arrange it, then swap two phones and tell me what changed").
+2. **Playtest 2 is decided, not built.** Four phones, framed animations, no
+   proximity. A floating balloon is the only panel that takes a tap; a cat
+   plays its reaction when the balloon arrives; a cactus pops the balloon; a
+   person stays a still. Every panel holds a still frame until it is
+   triggered. Whoever holds the balloon can pass it on, and it bounces back
+   at the end of the chain. Direction is chosen by the player: **tap the
+   left half of the screen to send the balloon left, the right half to send
+   it right.** No arrow and no number on screen. "Cat hears the pop" is
+   parked.
+   Honest scope: the tap chooses the order, the table does not. Physical
+   arrangement only changes whether a crossing looks continuous.
 3. Fix only what broke. Nothing broke in Playtest 1, so no bug-fix round is
    owed.
 4. After that, pick from `plan.md`'s "Later": manual pairing (code exists in
    `31572c2` / `c0e64b3`), the tap-to-pass visitor, or automatic proximity.
-5. If you still want hand-drawn panel art, the cheap version is a sprite
-   sheet: export a fixed number of frames as one strip, `await
-   loadImage(...)` in `async setup()` (p5 2 has no `preload()`), and index
-   frames with `floor(millis() / msPerFrame) % frameCount`. Keep the
-   `drawWalking` / `drawReacting` / `drawFalling` / `drawRunning` call sites
-   so the rest of the sketch does not change.
+5. Asset route for Playtest 2: one GIF per state is the least work, because
+   p5 2.2.3 already gives frame control (`setFrame(0)` for the still,
+   `play()` to trigger). A PNG sprite strip is the fallback if GIF's 256
+   colours dither the art; `await loadImage(...)` in `async setup()` (p5 2
+   has no `preload()`). Either way, every frame in a state needs the same
+   pixel box and anchor, and the still should be frame 0, or the panel jumps
+   when the animation starts.
 
 ## How to run
 
