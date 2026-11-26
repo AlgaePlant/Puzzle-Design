@@ -49,8 +49,11 @@ Players can experiment with different arrangements without needing to agree on a
 
 ## Steps
 
-Playtest 1 is four phones with four independent looping panels. Manual
-pairing and the visitor crossing are parked under "Later".
+Playtest 1 is four phones with four independent looping panels, and it has
+been run. Playtest 2 keeps the room and the four phones, replaces the drawn
+panels with framed animations, and adds one cross-phone interaction: the
+balloon. Proximity detection is still out, so the player aims the balloon by
+tapping. Manual pairing and the visitor crossing stay parked under "Later".
 
 Step 1: Panel shell and room join (done)
 
@@ -76,7 +79,7 @@ Step 2: Four independent looping panels (done)
 - Check: Four phones show four different loops; each loops cleanly; no two
   phones show the same panel while the room has four or fewer phones.
 
-Step 3: Playtest 1 and fixes
+Step 3: Playtest 1 and fixes (done)
 
 - Input: Four players arranging the phones in different orders.
 - Transformation: None in code; players move the phones and read the order.
@@ -86,6 +89,58 @@ Step 3: Playtest 1 and fixes
 - Check: Whether players read different stories from different arrangements,
   and whether the four panels feel like one comic.
 
+Step 4: Framed panels, still
+
+- Input: Nothing beyond opening the page and joining the room.
+- Transformation: Each phone loads the art for the panel it claimed, from
+  `assets/`, with `await loadImage()` in `async setup()`. Every panel holds
+  its first frame: a floating balloon, a cat, a cactus, a person.
+- Output: Four still panels, edge to edge, matching the exported art. No
+  movement, no tap.
+- Fallback: Laptop windows in the same room get the same stills.
+- Check: Four phones show four different stills and nothing animates. If one
+  asset fails to load, that phone still draws something instead of a blank
+  screen.
+
+Step 5: One seam, aimed by tap
+
+- Input: A tap on the left half of the balloon panel sends the balloon left;
+  a tap on the right half sends it right.
+- Transformation: The balloon lifts off and leaves that edge, writes the
+  handoff to the room, and the neighbour in that direction plays the entry
+  from its opposite edge after a fixed lead-in. At the end of the chain the
+  balloon bounces back.
+- Output: The balloon visibly crosses one seam, phone to phone. The cat and
+  the cactus still ignore it.
+- Fallback: Taps on a laptop window work the same way, so one person can walk
+  the balloon along a row of windows.
+- Check: The crossing has no gap or stutter at the seam, left and right both
+  work, and the balloon never disappears.
+
+Step 6: Cat and cactus
+
+- Input: Taps that steer the balloon into the cat or the cactus.
+- Transformation: When the balloon arrives at the cat, the cat plays its
+  reaction once and then holds the balloon, so the next player can pass it
+  on. When it arrives at the cactus, the cactus plays the pop, the trip ends,
+  and after a few seconds every panel returns to its still.
+- Output: A three-beat trip — balloon, cat reacts, cactus pops — or the pop
+  before the cat if the players aim that way.
+- Fallback: Same on the laptop.
+- Check: The cat's reaction is unmistakable; the pop ends the trip; the room
+  resets without a reload; ten trips in a row leave nothing stuck.
+
+Step 7: Playtest 2
+
+- Input: Four players placing the phones and tapping left or right.
+- Transformation: None in code; the players choose the route.
+- Output: Different tellings from different aims. The tap chooses the order;
+  the table only decides whether the crossings look continuous.
+- Fallback: Laptop windows stand in for missing phones.
+- Check: Whether players aim on purpose to get a different telling, and
+  whether they read the balloon's trip as one story. One spoken instruction:
+  "tap the side of the screen you want the balloon to fly towards."
+
 Later (parked, not built now)
 
 - Manual pairing A/B — built, works, code is parked.
@@ -94,6 +149,9 @@ Later (parked, not built now)
   refinement: the visitor continues from the walker's current position
   instead of a fixed point.
 - Automatic proximity and relative position (left, right, top or bottom).
+- Cat hears the pop: if the balloon pops before it reaches the cat, the cat
+  reacts to the pop. Parked for Playtest 2 because the reaction has to look
+  different from the balloon reaction, or it reads as random.
 
 ## Changes
 
