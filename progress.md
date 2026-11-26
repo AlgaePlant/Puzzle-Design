@@ -6,7 +6,8 @@ Last updated: Thu Nov 26 2026
 
 - `plan.md` — Playtest 1: three steps. Step 1 (join + panel claim) and
   Step 2 (four independent loops) are marked **(done)**; Step 3 is the
-  playtest itself. Manual pairing and the visitor crossing are parked under
+  playtest itself, which has now been run (see below) but is not marked in
+  `plan.md` yet. Manual pairing and the visitor crossing are parked under
   "Later".
 - `sketch.js` — the Playtest 1 build: room join, panel claim (1–4), four
   looping panels, and a panel-name label that fades out. No pairing, no
@@ -16,14 +17,9 @@ Last updated: Thu Nov 26 2026
 - `together/` — the user's Share example, unchanged. Source of the class host
   `https://p5-phone-share.npuckett.workers.dev` and room `a1-ridge`.
 - `style.css` is unused.
-
-Committed up to `a4cdad7 removed pair button`. Still uncommitted:
-
-- `plan.md` — your rewrite of Project / Questions, plus my "(done)" on Step 2.
-- `progress.md` — this file.
-- `references/mockup.png` — **deleted in the working tree** (was ~12 MB).
-  `plan.md`'s References table still lists it. If that deletion was not
-  deliberate, restore it with `git checkout -- references/mockup.png`.
+- Working tree is clean, committed up to `63d7fbe 11/12 work wrapup`.
+  `references/mockup.png` is back in place (it had been deleted in the
+  working tree; `plan.md`'s References table lists it).
 
 ## What works, and how it was checked
 
@@ -41,6 +37,11 @@ Committed up to `a4cdad7 removed pair button`. Still uncommitted:
   browser (running, plus the others during development).
 - **Panel name** — "1 · walking" style label under the status line, fades
   after ~4.5 s.
+- **Playtest 1 (four phones, in person)** — the page and the Share server
+  behaved normally throughout; all four phones joined, claimed different
+  panels, and looped without breaking. Players did assemble the panels into
+  a comic sequence. But they assembled it once and stopped: no one tried a
+  different order, and no one talked about what the story might be.
 - **Stale-cache incident** — a laptop tab kept running the pre-rewrite
   script, so the Pair pill was still drawn and `typeof onPairTap` returned
   `"function"` even though the source no longer had it. Not a code fault:
@@ -57,6 +58,8 @@ Committed up to `a4cdad7 removed pair button`. Still uncommitted:
 - The QR card only appears on a laptop.
 - If the tunnel is slow, joining takes a few seconds; the status dot stays
   grey until it connects.
+- Rearranging the phones currently has no visible consequence: each panel
+  loops in isolation, so a swap changes nothing on screen.
 
 ## Decisions made this round
 
@@ -75,14 +78,22 @@ Committed up to `a4cdad7 removed pair button`. Still uncommitted:
 
 ## What's next
 
-1. **Record what happened in the playtest.** Nothing from it is written down
-   in this file yet — which arrangements players tried, whether anyone read
-   a sequence out loud, whether the four panels felt like one comic, and
-   anything that actually broke.
-2. **Fix only what broke.** No new features in this round.
-3. After that, pick from `plan.md`'s "Later": manual pairing (code exists in
+1. **Playtest 1 result: arrangement was not explored.** Two likely reasons,
+   neither tested yet: (a) the "1 · walking" label announces an order, so
+   the numeric arrangement looks intended and finished; (b) swapping two
+   phones produces no visible change, so rearranging has no payoff. The
+   silence about story may also be the absence of a prompt — nobody asked a
+   player to read the sequence out loud.
+2. **Decide the next move before writing code:** one two-panel interaction
+   (walker crosses the seam — the parked pairing in `31572c2` / `c0e64b3`)
+   and dropping the number from the label, versus a simpler tap-to-advance
+   beat. Either way, the second playtest needs one spoken instruction
+   ("arrange it, then swap two phones and tell me what changed").
+3. Fix only what broke. Nothing broke in Playtest 1, so no bug-fix round is
+   owed.
+4. After that, pick from `plan.md`'s "Later": manual pairing (code exists in
    `31572c2` / `c0e64b3`), the tap-to-pass visitor, or automatic proximity.
-4. If you still want hand-drawn panel art, the cheap version is a sprite
+5. If you still want hand-drawn panel art, the cheap version is a sprite
    sheet: export a fixed number of frames as one strip, `await
    loadImage(...)` in `async setup()` (p5 2 has no `preload()`), and index
    frames with `floor(millis() / msPerFrame) % frameCount`. Keep the
