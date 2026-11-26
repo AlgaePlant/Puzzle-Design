@@ -25,8 +25,8 @@ const PANEL_ART = [
   '',
   'assets/panel-balloon.png',
   'assets/panel-cat.png',
-  'assets/panel-cactus.png',
-  'assets/panel-person.png'
+  'assets/panel-cactus.png?v=2',
+  'assets/panel-person.png?v=2'
 ];
 
 let myPanel = 0;          // 1..4, claimed from the room after joining
