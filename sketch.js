@@ -1,30 +1,42 @@
 /* =====================================================================
-   Moveable Comic Panels — Playtest 1
-   Four phones, four independent looping panels. The room hands each
-   phone a different panel, and players rearrange the phones by hand to
-   read different comic sequences.
+   Moveable Comic Panels — Playtest 2, step 4: framed panels, still
+   Four phones, four framed panels. The room hands each phone a different
+   panel, and every panel holds its first frame.
 
-     1 walking · 2 reacting · 3 falling · 4 running
+     balloon · cat · cactus · person
 
-   Manual pairing and the visitor crossing are parked for later.
+   Step 4 has no tap and no movement yet. The room join, the panel claim
+   and the status line are unchanged from Playtest 1.
+
+   The art in assets/ is a phone-sized crop of the exported drawings; the
+   originals (2732 x 2048) stay in assets/ untouched.
    ===================================================================== */
 
 const SHARE_HOST = 'https://p5-phone-share.npuckett.workers.dev'; // class server
 const ROOM = 'a1-ridge';                                          // our room
 const NAMES = ['otter', 'heron', 'moth', 'fox', 'newt', 'crow'];
 
-const INK = '#111111';
 const PAPER = '#ffffff';
 const GREY = '#8a8a8a';
 const OK = '#2f9e44';
 
-const GROUND = 0.78;      // the ground line, as a fraction of height
-const PANEL_NAMES = ['', 'walking', 'reacting', 'falling', 'running'];
+const PANEL_NAMES = ['', 'balloon', 'cat', 'cactus', 'person'];
+const PANEL_ART = [
+  '',
+  'assets/panel-balloon.png',
+  'assets/panel-cat.png',
+  'assets/panel-cactus.png',
+  'assets/panel-person.png'
+];
 
 let myPanel = 0;          // 1..4, claimed from the room after joining
 let claimAt = 0;          // small random delay, so two phones do not grab the same number
 let lastPrune = 0;
 let labelAt = 0;          // when the panel name was last announced
+
+let panelImg = null;      // the still for the panel we claimed
+let panelLoading = false;
+let panelFailed = false;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -48,6 +60,7 @@ function setup() {
 function draw() {
   background(PAPER);
   claimPanel();
+  loadPanelArt();
   drawMyPanel();
   drawStatus();
   drawPanelName();
@@ -59,112 +72,58 @@ function windowResized() {
 
 /* ---------- 1. MY PANEL ---------- */
 
-/* One loop per panel, each on its own clock. Every drawing uses the same
-   line weight, figure height and ground line, so four phones can read as
-   panels of one comic. */
+/* The still, edge to edge. Every panel art is 1080 x 1920, so COVER crops
+   a little from the sides rather than stretching the drawing. */
 function drawMyPanel() {
   if (!myPanel) return;
 
-  const now = millis();
+  if (panelFailed) {
+    drawMissingPanel();
+    return;
+  }
+
+  // Blank paper for the moment between claiming a panel and its image
+  // arriving; the status line already says connected.
+  if (!panelImg) return;
+
+  image(panelImg, 0, 0, width, height, 0, 0, panelImg.width, panelImg.height, COVER);
+}
+
+/* A missing asset must be visible, not a silent white phone. */
+function drawMissingPanel() {
   const s = min(width / 390, height / 700);
 
   push();
-  stroke(INK);
-  strokeWeight(3 * s);
-  strokeCap(ROUND);
   noFill();
-
-  if (myPanel === 2) drawReacting(now);
-  else if (myPanel === 3) drawFalling(now);
-  else if (myPanel === 4) drawRunning(now);
-  else drawWalking(now);
-
+  stroke(GREY);
+  strokeWeight(1.5 * s);
+  drawingContext.setLineDash([6 * s, 6 * s]);
+  rect(24 * s, 24 * s, width - 48 * s, height - 48 * s);
+  drawingContext.setLineDash([]);
   pop();
+
+  noStroke();
+  fill(GREY);
+  textAlign(CENTER, CENTER);
+  textSize(15 * s);
+  text('no image for ' + PANEL_NAMES[myPanel], width / 2, height / 2);
 }
 
-/* Panel 1: a figure walks across the panel, left to right, on a loop. */
-function drawWalking(now) {
-  const u = (now % 4500) / 4500;
-  const x = 0.12 * width + u * 0.76 * width;
-  drawWalker(x, GROUND * height, 0.20 * height, sin(u * TAU * 5), 1);
-}
+/* The panel number only exists once the room has claimed it, so the image
+   is loaded then, not in setup(). Each phone fetches one file. */
+function loadPanelArt() {
+  if (!myPanel || panelImg || panelLoading || panelFailed) return;
 
-/* Panel 2: a figure stands still, then recoils with raised arms. */
-function drawReacting(now) {
-  const u = (now % 3600) / 3600;
-  const r = u > 0.40 && u < 0.90 ? sin(map(u, 0.40, 0.90, 0, PI)) : 0;
-  const cx = 0.5 * width;
-  const gy = GROUND * height;
-  const h = 0.22 * height;
-
-  const lean = 0.16 * h * r;
-  const headY = gy - 0.80 * h - 0.02 * h * r;
-
-  circle(cx - lean, headY, 0.22 * h);
-  line(cx - lean, gy - 0.67 * h, cx, gy - 0.34 * h);
-  line(cx - lean, gy - 0.67 * h, cx - lean - 0.16 * h, gy - (0.58 + 0.16 * r) * h);
-  line(cx - lean, gy - 0.67 * h, cx - lean + 0.16 * h, gy - (0.58 + 0.16 * r) * h);
-  line(cx, gy - 0.34 * h, cx - 0.07 * h, gy);
-  line(cx, gy - 0.34 * h, cx + 0.07 * h, gy);
-
-  if (r > 0.5) {
-    line(cx - lean - 0.05 * h, headY - 0.19 * h, cx - lean - 0.09 * h, headY - 0.27 * h);
-    line(cx - lean + 0.05 * h, headY - 0.19 * h, cx - lean + 0.09 * h, headY - 0.27 * h);
-  }
-}
-
-/* Panel 3: a figure drops through the panel, accelerating. */
-function drawFalling(now) {
-  const u = (now % 2600) / 2600;
-  const t = constrain(map(u, 0, 0.80, 0, 1), 0, 1);
-  const y = -0.15 * height + t * t * 1.25 * height;
-  drawFaller(0.5 * width, y, 0.22 * height, now);
-}
-
-function drawFaller(cx, cy, h, now) {
-  const flail = sin(now / 110);
-
-  circle(cx, cy - 0.32 * h, 0.22 * h);
-  line(cx, cy - 0.21 * h, cx, cy + 0.12 * h);                              // body
-  line(cx, cy - 0.15 * h, cx - 0.18 * h, cy - 0.30 * h - 0.05 * h * flail); // arm
-  line(cx, cy - 0.15 * h, cx + 0.18 * h, cy - 0.30 * h + 0.05 * h * flail); // arm
-  line(cx, cy + 0.12 * h, cx - 0.15 * h, cy + 0.32 * h);                   // leg
-  line(cx, cy + 0.12 * h, cx + 0.15 * h, cy + 0.32 * h);                   // leg
-}
-
-/* Panel 4: a figure runs across the panel, leaning forward. */
-function drawRunning(now) {
-  const u = (now % 2200) / 2200;
-  const x = 0.10 * width + u * 0.80 * width;
-  drawRunner(x, GROUND * height, 0.20 * height, sin(u * TAU * 8));
-}
-
-function drawRunner(cx, groundY, h, swing) {
-  const lean = 0.065 * h;
-  const neckY = groundY - 0.67 * h;
-  const hipY = groundY - 0.34 * h;
-
-  circle(cx + lean, groundY - 0.80 * h, 0.22 * h);
-  line(cx + lean, neckY, cx, hipY);
-  line(cx + lean, neckY, cx + 0.16 * h, groundY - 0.50 * h);              // front arm
-  line(cx + lean, neckY, cx - 0.14 * h, groundY - 0.52 * h);              // back arm
-  line(cx, hipY, cx - 0.17 * h * swing, groundY);                         // leg back
-  line(cx, hipY, cx + 0.17 * h * swing, groundY - 0.03 * h * abs(swing)); // leg front
-}
-
-/* A walking stick figure: feet on groundY, h tall, legs and arms swung
-   by swing (-1 to 1), facing left (face -1) or right (face 1). */
-function drawWalker(cx, groundY, h, swing, face) {
-  const headY = groundY - 0.80 * h;
-  const neckY = groundY - 0.67 * h;
-  const hipY = groundY - 0.34 * h;
-
-  circle(cx, headY, 0.22 * h);
-  line(cx, neckY, cx, hipY);
-  line(cx, neckY, cx - 0.10 * h * swing * face, groundY - 0.42 * h); // arm back
-  line(cx, neckY, cx + 0.10 * h * swing * face, groundY - 0.42 * h); // arm front
-  line(cx, hipY, cx - 0.10 * h * swing * face, groundY);             // leg back
-  line(cx, hipY, cx + 0.10 * h * swing * face, groundY);             // leg front
+  panelLoading = true;
+  loadImage(PANEL_ART[myPanel])
+    .then(function (img) {
+      panelImg = img;
+      panelLoading = false;
+    })
+    .catch(function () {
+      panelFailed = true;
+      panelLoading = false;
+    });
 }
 
 /* ---------- 2. PANEL CLAIM ---------- */
@@ -236,7 +195,8 @@ function phoneCount() {
   return 1 + others;
 }
 
-/* The panel's name, faded in for a few seconds and then gone. */
+/* The panel's name, faded in for a few seconds and then gone. No number:
+   the number announced an order in Playtest 1. */
 function drawPanelName() {
   if (!myPanel || !labelAt) return;
 
@@ -250,5 +210,5 @@ function drawPanelName() {
   fill(138, 138, 138, 255 * a);
   textAlign(LEFT, CENTER);
   textSize(13 * s);
-  text(myPanel + ' · ' + PANEL_NAMES[myPanel], 34 * s, 54 * s);
+  text(PANEL_NAMES[myPanel], 34 * s, 54 * s);
 }
