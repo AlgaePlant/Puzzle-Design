@@ -102,7 +102,7 @@ Step 4: Framed panels, still (done)
   asset fails to load, that phone still draws something instead of a blank
   screen.
 
-Step 5: One seam, aimed by tap
+Step 5: One seam, aimed by tap (done)
 
 - Input: A tap on the left half of the balloon panel sends the balloon left;
   a tap on the right half sends it right.
