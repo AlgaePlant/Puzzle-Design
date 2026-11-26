@@ -34,6 +34,10 @@ const FORCED_PANEL = Math.min(
   Math.max(0, parseInt(new URLSearchParams(location.search).get('panel'), 10) || 0)
 );
 
+/* ?debug prints what this phone believes about the room, on screen, so a
+   phone without a console can be checked. Leave it off normally. */
+const DEBUG = new URLSearchParams(location.search).has('debug');
+
 const PAPER = '#ffffff';
 const GREY = '#8a8a8a';
 const OK = '#2f9e44';
@@ -80,6 +84,7 @@ let anim = null;          // { kind: 'exit' | 'entry' | 'bounce', dir, start, du
 let lastTrip = '';        // "1>2" of the last trip we reacted to
 let tripBusy = false;     // we sent a trip and have not seen it come back yet
 let busyAt = 0;
+let claimWriteAt = 0;     // last time we put our panel back in the room
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -114,6 +119,7 @@ function draw() {
   drawMyPanel();
   drawStatus();
   drawPanelName();
+  drawDebug();
 }
 
 function windowResized() {
@@ -305,7 +311,22 @@ function claimPanel() {
     if (Object.keys(keep).length !== Object.keys(map).length) shareSet('panels', keep);
   }
 
-  if (myPanel) return;
+  if (myPanel) {
+    // A phone that hides its page leaves the room and comes back with the
+    // same panel, but the room has pruned its entry by then. Put it back, or
+    // no phone can send the balloon here. Only if the number is still free:
+    // a newcomer may have taken it while this phone was away.
+    const takenByOther = Object.keys(map).some(function (id) {
+      return id !== window.shareClientId && map[id] === myPanel;
+    });
+    if (window.shareConnected && !takenByOther &&
+        map[window.shareClientId] !== myPanel && millis() - claimWriteAt > 1000) {
+      claimWriteAt = millis();
+      shareSet('panels', Object.assign({}, map, { [window.shareClientId]: myPanel }));
+    }
+    return;
+  }
+
   if (!claimAt) claimAt = millis() + (FORCED_PANEL ? 0 : random(250, 1200));
   if (millis() < claimAt) return;
 
@@ -322,6 +343,7 @@ function claimPanel() {
   myPanel = n;
   labelAt = millis();
   readyAt = millis() + 1200;
+  claimWriteAt = millis();
   shareSet('panels', Object.assign({}, map, { [window.shareClientId]: n }));
 }
 
@@ -358,6 +380,33 @@ function phoneCount() {
   if (!window.shareConnected) return 0;
   const others = Array.isArray(window.guests) ? window.guests.length : 0;
   return 1 + others;
+}
+
+/* ?debug: what this phone believes, for a phone with no console. */
+function drawDebug() {
+  if (!DEBUG || !myPanel) return;
+
+  const trip = window.shared && window.shared.balloon;
+  const claims = Object.values((window.shared && window.shared.panels) || {}).sort().join(',');
+  const s = min(width / 390, height / 700);
+
+  const lines = [
+    'panel ' + myPanel + '  balloon at ' + (trip ? trip.to : '-') +
+      '  hold ' + (holdsBalloon() ? 'yes' : 'no'),
+    'anim ' + (anim ? anim.kind : '-') +
+      '  still ' + (panelImg ? 'ok' : '-') +
+      '  sprite ' + (balloonImg ? 'ok' : '-'),
+    'claimed ' + (claims || '-') +
+      '  phones ' + phoneCount() +
+      '  forced ' + FORCED_PANEL
+  ];
+
+  noStroke();
+  fill(120);
+  textAlign(LEFT, BOTTOM);
+  textSize(11 * s);
+  textLeading(15 * s);
+  text(lines.join('\n'), 16 * s, height - 16 * s);
 }
 
 /* The panel's name, faded in for a few seconds and then gone. No number:
