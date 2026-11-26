@@ -2,13 +2,12 @@
 
 ## Project
 
-Phone as moveable comic panels, to let players create different narratives by rearranging and connecting animated panels, for four or more players sharing a physical space.
+Phone as moveable comic panels, to let players create different narratives by rearranging animated panels, for multiple phones in one space.
 
-## The question
+## Questions
 
-Can rearranging phones and connecting animated panels create different narratives?
-
-Can changes on one phone influence the animation displayed on another phone in a meaningful way?
+- Can rearranging animated panels create different narratives?
+- Can changes on one phone influence the animation displayed on another phone in a meaningful way?
 
 ## The experience
 
@@ -66,7 +65,7 @@ Step 1: Panel shell and room join (done)
 - Check: Two phones join by QR and show two different panels; the status
   line says connected and counts the phones.
 
-Step 2: Four independent looping panels
+Step 2: Four independent looping panels (done)
 
 - Input: Nothing beyond opening the page.
 - Transformation: Four hand-drawn loops, each on its own clock: walking,
