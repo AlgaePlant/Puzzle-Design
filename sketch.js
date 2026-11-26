@@ -1,42 +1,85 @@
 /* =====================================================================
-   Moveable Comic Panels — Playtest 2, step 4: framed panels, still
+   Moveable Comic Panels — Playtest 2, step 5: one seam, aimed by tap
+
    Four phones, four framed panels. The room hands each phone a different
-   panel, and every panel holds its first frame.
+   panel and the balloon starts on panel 1. Whoever holds the balloon can
+   send it one panel along:
+
+     tap the left half of the screen  -> the balloon goes left
+     tap the right half of the screen -> the balloon goes right
+
+   The balloon leaves the edge of the sender and enters the far edge of the
+   neighbour, so the crossing reads as one move across the seam. At the end
+   of the chain it bumps the edge and stays.
 
      balloon · cat · cactus · person
 
-   Step 4 has no tap and no movement yet. The room join, the panel claim
-   and the status line are unchanged from Playtest 1.
+   Step 5 stops there: the cat and the cactus ignore the balloon. The pop
+   and the reactions are step 6.
 
-   The art in assets/ is a phone-sized crop of the exported drawings; the
-   originals (2732 x 2048) stay in assets/ untouched.
+   The balloon is a separate sprite drawn over the panel, so it can leave
+   its own panel. The art in assets/ is a phone-sized crop of the exported
+   drawings; the originals (2732 x 2048) stay in assets/ untouched.
    ===================================================================== */
 
 const SHARE_HOST = 'https://p5-phone-share.npuckett.workers.dev'; // class server
 const ROOM = 'a1-ridge';                                          // our room
 const NAMES = ['otter', 'heron', 'moth', 'fox', 'newt', 'crow'];
 
+/* Testing switch, not part of the design: ?panel=3 makes this phone claim
+   panel 3 instead of taking the first free one, so one phone can be walked
+   through all four panels. Leave it off for a playtest. */
+const FORCED_PANEL = Math.min(
+  4,
+  Math.max(0, parseInt(new URLSearchParams(location.search).get('panel'), 10) || 0)
+);
+
 const PAPER = '#ffffff';
 const GREY = '#8a8a8a';
 const OK = '#2f9e44';
 
 const PANEL_NAMES = ['', 'balloon', 'cat', 'cactus', 'person'];
+
+/* Panel 1 has no still of its own: its balloon is the sprite, so it can
+   leave. The other three are stills, drawn edge to edge. */
 const PANEL_ART = [
   '',
-  'assets/panel-balloon.png',
+  null,
   'assets/panel-cat.png',
   'assets/panel-cactus.png?v=2',
   'assets/panel-person.png?v=2'
 ];
+const BALLOON_ART = 'assets/panel-balloon.png';
+
+/* Travel is measured in panel widths so it looks the same on any phone.
+   0.70 of a width clears the balloon past the edge with room to spare. */
+const TRAVEL = 0.70;
+const EXIT_MS = 420;      // resting place to off the edge
+const ENTRY_MS = 420;     // off the edge to the resting place
+const LEAD_MS = 120;      // the receiver waits, so the sender leaves first
+const BOUNCE_MS = 260;    // a tap towards no phone
+
+/* The balloon rides a little above the middle of the panel, so on the cat's
+   panel it passes over the ears instead of covering the face. */
+const BALLOON_LIFT = 0.16;
 
 let myPanel = 0;          // 1..4, claimed from the room after joining
 let claimAt = 0;          // small random delay, so two phones do not grab the same number
 let lastPrune = 0;
 let labelAt = 0;          // when the panel name was last announced
+let readyAt = 0;          // ignore taps for a moment after claiming
 
 let panelImg = null;      // the still for the panel we claimed
 let panelLoading = false;
 let panelFailed = false;
+
+let balloonImg = null;    // the sprite, loaded by every phone
+let balloonLoading = false;
+
+let anim = null;          // { kind: 'exit' | 'entry' | 'bounce', dir, start, dur }
+let lastTrip = '';        // "1>2" of the last trip we reacted to
+let tripBusy = false;     // we sent a trip and have not seen it come back yet
+let busyAt = 0;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -48,7 +91,10 @@ function setup() {
     host: SHARE_HOST,
     room: ROOM,
     app: 'moveable-panels',
-    shared: { panels: {} },                       // who shows which panel
+    shared: {
+      panels: {},                               // who shows which panel
+      balloon: { from: 0, to: 1 }               // resting on panel 1, no trip yet
+    },
     me: { name: wanted || random(NAMES) }
   });
 
@@ -60,7 +106,11 @@ function setup() {
 function draw() {
   background(PAPER);
   claimPanel();
-  loadPanelArt();
+  loadArt();
+
+  ageAnim();
+  readTrip();
+
   drawMyPanel();
   drawStatus();
   drawPanelName();
@@ -72,21 +122,50 @@ function windowResized() {
 
 /* ---------- 1. MY PANEL ---------- */
 
-/* The still, edge to edge. Every panel art is 1080 x 1920, so COVER crops
-   a little from the sides rather than stretching the drawing. */
 function drawMyPanel() {
   if (!myPanel) return;
 
-  if (panelFailed) {
+  const art = PANEL_ART[myPanel];
+
+  if (art && panelFailed) {
     drawMissingPanel();
-    return;
+  } else if (art && panelImg) {
+    const r = coverRect(panelImg);
+    image(panelImg, r.x, r.y, r.w, r.h);
   }
 
-  // Blank paper for the moment between claiming a panel and its image
-  // arriving; the status line already says connected.
-  if (!panelImg) return;
+  drawBalloon();
+}
 
-  image(panelImg, 0, 0, width, height, 0, 0, panelImg.width, panelImg.height, COVER);
+/* The balloon is drawn as a layer over whichever panel holds it, offset
+   while it is leaving or arriving. Offset 0 is exactly where the still in
+   step 4 showed it, so the resting look has not changed. */
+function drawBalloon() {
+  if (!balloonImg) return;
+
+  const trip = window.shared && window.shared.balloon;
+  const resting = !!trip && trip.to === myPanel;
+  const leaving = !!anim && anim.kind === 'exit';
+  if (!resting && !leaving) return;
+
+  const r = coverRect(balloonImg);
+  image(balloonImg, r.x + balloonOffset(), r.y - BALLOON_LIFT * height, r.w, r.h);
+}
+
+function balloonOffset() {
+  if (!anim) return 0;
+
+  const p = constrain((millis() - anim.start) / anim.dur, 0, 1);
+  const far = TRAVEL * width;
+
+  if (anim.kind === 'exit') return anim.dir * far * p;
+  if (anim.kind === 'entry') return -anim.dir * far * (1 - p);
+  return anim.dir * 0.12 * width * sin(p * PI);   // bounce off the end
+}
+
+function ageAnim() {
+  if (anim && millis() - anim.start >= anim.dur) anim = null;
+  if (tripBusy && millis() - busyAt > 2000) tripBusy = false;
 }
 
 /* A missing asset must be visible, not a silent white phone. */
@@ -109,24 +188,104 @@ function drawMissingPanel() {
   text('no image for ' + PANEL_NAMES[myPanel], width / 2, height / 2);
 }
 
-/* The panel number only exists once the room has claimed it, so the image
-   is loaded then, not in setup(). Each phone fetches one file. */
-function loadPanelArt() {
-  if (!myPanel || panelImg || panelLoading || panelFailed) return;
-
-  panelLoading = true;
-  loadImage(PANEL_ART[myPanel])
-    .then(function (img) {
-      panelImg = img;
-      panelLoading = false;
-    })
-    .catch(function () {
-      panelFailed = true;
-      panelLoading = false;
-    });
+/* Same cover maths as image(..., COVER), in a form that also gives the
+   balloon somewhere to be offset from. */
+function coverRect(img) {
+  const k = max(width / img.width, height / img.height);
+  const w = img.width * k;
+  const h = img.height * k;
+  return { x: (width - w) / 2, y: (height - h) / 2, w: w, h: h };
 }
 
-/* ---------- 2. PANEL CLAIM ---------- */
+/* The panel number only exists once the room has claimed it, so the art is
+   loaded then, not in setup(). Each phone fetches its own still, plus the
+   balloon sprite, which every phone may have to show. */
+function loadArt() {
+  if (!myPanel) return;
+
+  const art = PANEL_ART[myPanel];
+  if (art && !panelImg && !panelLoading && !panelFailed) {
+    panelLoading = true;
+    loadImage(art)
+      .then(function (img) { panelImg = img; panelLoading = false; })
+      .catch(function () { panelFailed = true; panelLoading = false; });
+  }
+
+  if (!balloonImg && !balloonLoading) {
+    balloonLoading = true;
+    loadImage(BALLOON_ART)
+      .then(function (img) { balloonImg = img; balloonLoading = false; })
+      .catch(function () { balloonLoading = false; });
+  }
+}
+
+/* ---------- 2. THE TRIP ---------- */
+
+/* Everyone reacts to the same room value, the sender included: the worker
+   echoes the change to every phone at once, so both ends start together
+   and there is no clock to compare. */
+function readTrip() {
+  const trip = window.shared && window.shared.balloon;
+  if (!trip) return;
+
+  const key = trip.from + '>' + trip.to;
+  if (key === lastTrip) return;
+
+  const first = !lastTrip;
+  lastTrip = key;
+  tripBusy = false;
+
+  // Whatever the room was doing when we joined is already settled.
+  if (first) return;
+  // from 0 is the room's first placement, not a journey.
+  if (!trip.from) return;
+
+  const dir = trip.to > trip.from ? 1 : -1;
+
+  if (trip.to === myPanel) {
+    anim = { kind: 'entry', dir: dir, start: millis() + LEAD_MS, dur: ENTRY_MS };
+  } else if (trip.from === myPanel) {
+    anim = { kind: 'exit', dir: dir, start: millis(), dur: EXIT_MS };
+  }
+}
+
+function holdsBalloon() {
+  const trip = window.shared && window.shared.balloon;
+  return !!trip && trip.to === myPanel;
+}
+
+function sendBalloon(dir) {
+  if (!holdsBalloon()) return;
+
+  const target = myPanel + dir;
+
+  // No phone on that side: bump the edge and stay, so the chain is never
+  // lost on the table.
+  if (!panelClaimed(target)) {
+    anim = { kind: 'bounce', dir: dir, start: millis(), dur: BOUNCE_MS };
+    return;
+  }
+
+  tripBusy = true;
+  busyAt = millis();
+  shareSet('balloon', { from: myPanel, to: target });
+}
+
+function panelClaimed(n) {
+  const map = (window.shared && window.shared.panels) || {};
+  return Object.values(map).indexOf(n) >= 0;
+}
+
+/* A tap is the only input: the half of the screen is the direction. */
+function mousePressed() {
+  if (millis() < readyAt) return false;
+  if (tripBusy || anim) return false;
+
+  sendBalloon(mouseX < width / 2 ? -1 : 1);
+  return false;
+}
+
+/* ---------- 3. PANEL CLAIM ---------- */
 
 /* Each phone claims a panel number in the room's shared map, so phones
    in the same room show different panels. Numbers left behind by phones
@@ -147,16 +306,22 @@ function claimPanel() {
   }
 
   if (myPanel) return;
-  if (!claimAt) claimAt = millis() + random(250, 1200);
+  if (!claimAt) claimAt = millis() + (FORCED_PANEL ? 0 : random(250, 1200));
   if (millis() < claimAt) return;
 
-  const used = Object.values(map);
-  let n = 1;
-  while (n <= 4 && used.indexOf(n) >= 0) n++;
-  if (n > 4) n = 1;   // room full of panels: show one anyway
+  let n;
+  if (FORCED_PANEL) {
+    n = FORCED_PANEL;
+  } else {
+    const used = Object.values(map);
+    n = 1;
+    while (n <= 4 && used.indexOf(n) >= 0) n++;
+    if (n > 4) n = 1;   // room full of panels: show one anyway
+  }
 
   myPanel = n;
   labelAt = millis();
+  readyAt = millis() + 1200;
   shareSet('panels', Object.assign({}, map, { [window.shareClientId]: n }));
 }
 
@@ -164,7 +329,7 @@ function guestPresent(id) {
   return (window.guests || []).some(function (g) { return g.id === id; });
 }
 
-/* ---------- 3. STATUS ---------- */
+/* ---------- 4. STATUS ---------- */
 
 function drawStatus() {
   const s = min(width / 390, height / 700);

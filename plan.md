@@ -89,7 +89,7 @@ Step 3: Playtest 1 and fixes (done)
 - Check: Whether players read different stories from different arrangements,
   and whether the four panels feel like one comic.
 
-Step 4: Framed panels, still
+Step 4: Framed panels, still (done)
 
 - Input: Nothing beyond opening the page and joining the room.
 - Transformation: Each phone loads the art for the panel it claimed, from
